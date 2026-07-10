@@ -1,0 +1,18 @@
+services:
+  babeldoc:
+    build: .
+    container_name: yll_babeldoc
+    restart: unless-stopped
+    ports:
+      - "21012:21012"
+    # CPU layout inference + torch: give it headroom but cap it.
+    mem_limit: 4g
+    environment:
+      TRANSLATE_ENGINE: google   # free, no API key; see README for DeepL etc.
+    volumes:
+      - yll_babeldoc_cache:/root/.cache   # DocLayout-YOLO model + fonts (first-run download)
+      - yll_babeldoc_data:/data           # jobs + results (24h TTL)
+
+volumes:
+  yll_babeldoc_cache:
+  yll_babeldoc_data:
