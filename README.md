@@ -89,13 +89,14 @@ docker exec yll_babeldoc sh -c 'mkdir -p /root/.cache/babeldoc/models && \
 默认引擎 **Google**（免费、无需 API key），通过环境变量 `TRANSLATE_ENGINE` 切换，
 取值即 pdf2zh CLI 的引擎 flag 名（`google` / `bing` / `deepl` / `openai` ...）。
 
-引擎的附加参数（如 DeepL 的 API key）按 pdf2zh-next 的约定用环境变量传入容器：
-CLI 选项 `--xxx-yyy` 对应环境变量 `PDF2ZH_XXX_YYY`。例如 DeepL：
+引擎的附加参数（如 DeepL 的 API key）通过 `TRANSLATE_ENGINE_ARGS` 原样追加到
+pdf2zh CLI（选项名以 `pdf2zh --help` 为准）。wrapper 会把这些参数值从任务日志里
+打码（`/status` 会对外返回日志尾部）。例如 DeepL：
 
 ```yaml
 environment:
   TRANSLATE_ENGINE: deepl
-  PDF2ZH_DEEPL_AUTH_KEY: "..."   # 具体变量名以 pdf2zh --help 输出为准
+  TRANSLATE_ENGINE_ARGS: "--deepl-auth-key YOUR_KEY"
 ```
 
 `qps` 请求参数控制对翻译服务的每秒请求数，免费 Google 引擎建议保持低值（默认 2）。

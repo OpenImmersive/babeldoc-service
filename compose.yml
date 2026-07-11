@@ -9,6 +9,9 @@ services:
     mem_limit: 4g
     environment:
       TRANSLATE_ENGINE: google   # free, no API key; see README for DeepL etc.
+      # DeepL example (real key stays in your deployment, never in this repo):
+      # TRANSLATE_ENGINE: deepl
+      # TRANSLATE_ENGINE_ARGS: "--deepl-auth-key YOUR_KEY"
     volumes:
       - yll_babeldoc_cache:/root/.cache   # DocLayout-YOLO model + fonts (first-run download)
       - yll_babeldoc_data:/data           # jobs + results (24h TTL)

@@ -25,6 +25,7 @@ import json
 import os
 import queue
 import re
+import shlex
 import shutil
 import subprocess
 import threading
@@ -40,6 +41,11 @@ HOST = os.environ.get("HOST", "0.0.0.0")
 # Translation engine flag passed to the CLI (--google, --bing, --deepl, ...).
 # Google is free and needs no API key, so it is the default.
 ENGINE = os.environ.get("TRANSLATE_ENGINE", "google")
+# Extra CLI args for the engine (API keys etc.), e.g. for DeepL:
+#   TRANSLATE_ENGINE_ARGS=--deepl-auth-key xxxx
+# Values are appended to the CLI verbatim but REDACTED from the job log
+# (log tails are served over /status).
+ENGINE_ARGS = shlex.split(os.environ.get("TRANSLATE_ENGINE_ARGS", ""))
 JOB_TTL_SECONDS = 24 * 3600
 JOB_TIMEOUT_SECONDS = int(os.environ.get("JOB_TIMEOUT_SECONDS", "3600"))
 MAX_UPLOAD_BYTES = 200 * 1024 * 1024
@@ -123,11 +129,15 @@ def run_job(job_id: str) -> None:
     ]
     if meta.get("pages"):
         cmd += ["--pages", meta["pages"]]
+    # Engine credentials go last; the logged command line redacts their values.
+    logged = " ".join(cmd) + (" " + " ".join(
+        a if a.startswith("-") else "***" for a in ENGINE_ARGS) if ENGINE_ARGS else "")
+    cmd += ENGINE_ARGS
 
     log_path = d / "log.txt"
     try:
         with log_path.open("ab") as lf:
-            lf.write((" ".join(cmd) + "\n").encode())
+            lf.write((logged + "\n").encode())
             lf.flush()
             proc = subprocess.run(
                 cmd,
