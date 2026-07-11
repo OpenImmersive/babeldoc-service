@@ -63,6 +63,7 @@ _job_queue: "queue.Queue[str]" = queue.Queue()
 RE_JOB_ID = re.compile(r"^[0-9a-f]{32}$")
 RE_PAGES = re.compile(r"^[0-9]+(-[0-9]*)?(,[0-9]+(-[0-9]*)?)*$")
 RE_LANG = re.compile(r"^[A-Za-z]{2,3}(-[A-Za-z]{2,8})?$")
+RE_ENGINE = re.compile(r"^[a-z][a-z0-9]{1,31}$")
 
 
 # ---------------------------------------------------------------- job store
@@ -294,6 +295,12 @@ class Handler(BaseHTTPRequestHandler):
             qps = min(max(int(qps_raw), 1), 10)
         except ValueError:
             return self._json(400, {"error": "bad qps"})
+        # Optional per-request engine override (a pdf2zh engine flag name, e.g.
+        # "google"). No allow-list here — an unknown engine simply fails the
+        # CLI — and credentials still come ONLY from the deployment env.
+        engine = fields.get("engine", b"").decode("utf-8", "replace").strip() or ENGINE
+        if not RE_ENGINE.match(engine):
+            return self._json(400, {"error": "bad engine"})
 
         job_id = uuid.uuid4().hex
         d = job_dir(job_id)
@@ -306,7 +313,7 @@ class Handler(BaseHTTPRequestHandler):
             "lang_out": lang_out,
             "pages": pages,
             "qps": qps,
-            "engine": ENGINE,
+            "engine": engine,
             "size_bytes": len(pdf),
         })
         _job_queue.put(job_id)
